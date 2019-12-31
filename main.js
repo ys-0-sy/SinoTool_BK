@@ -1,5 +1,8 @@
 const axiosBase = require('axios')
 const moment = require('moment')
+const firebase = require('./firebase')
+
+console.log(firebase)
 
 const axios = axiosBase.create({
   baseURL: 'https://sinoalice.game-db.tw/package/alice_event2.js',
@@ -22,8 +25,8 @@ axios.get()
         ID: event[4]
       })
     })
-    console.log(moment().unix())
-    console.log(data.filter(event => event.StartTime >= moment().unix()))
+    //console.log(moment().unix())
+    //console.log(data.filter(event => event.StartTime<= moment().unix() && event.EndTime >= moment().unix()))
   })
   .catch((err) => {
   console.log(err)
