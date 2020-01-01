@@ -16,35 +16,60 @@ firebase.initializeApp(firebaseConfig)
 
 const email = "yuta.saito0703@gmail.com"
 const password = "111111"
-firebase
-  .auth()
-  .signInWithEmailAndPassword(email, password)
-  .then(payload => {
-    console.log(payload.user.uid)
-    let db = firebase.firestore()
-    db.collection('users').add({
-      first: 'Ada',
-      last: 'Lovelace',
-      born: 1815
-    })
-      .then(docRef => {
-        console.log("Document written with ID: ", docRef.id)
-      })
-      .catch(err => {
-        console.error("Error adding document: ", err)
-      })
-  })
-  .then(payload => {
-    firebase.auth().signOut().then(function () {
-      console.log("firebase SignOut")
-    }).catch(function (error) {
-      console.error("Signout Error: ", error)
-    });
-  })
-  .catch(function (error) {
-    console.error("firebase auth error: ", err)
-});
 
+exports.AuthDocumentWrite = data => {
+  firebase
+    .auth()
+    .signInWithEmailAndPassword(email, password)
+    .then(payload => {
+      console.log(payload.user.uid);
+    })
+    .then(payload => {
+      if (data.length === 1) {
+        return firebase
+          .firestore()
+          .collection("users")
+          .add(data)
+          .then(docRef => {
+            console.log("Object")
+            console.log("Document written with ID: ", docRef.id);
+          })
+          .catch(err => {
+            console.error("Error adding document: ", err);
+          });
+      } else {
+         new Promise(() => {
+           data.map(singleData => {
+            firebase
+              .firestore()
+              .collection("testEvent")
+              .add(singleData)
+              .then(docRef => {
+                console.log("Document written with ID: ", docRef.id);
+              })
+              .catch(err => {
+                console.error("Error adding document: ", err);
+              })
+           })
+        })
+      }
+
+    })
+    .then(payload => {
+      firebase
+        .auth()
+        .signOut()
+        .then(function() {
+          console.log("firebase SignOut");
+        })
+        .catch(function(error) {
+          console.error("Signout Error: ", error);
+        });
+    })
+    .catch(function(error) {
+      console.error("firebase auth error: ", error);
+    });
+}
 
 
 
