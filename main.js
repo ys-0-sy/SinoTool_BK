@@ -1,6 +1,7 @@
 const axiosBase = require('axios')
 const moment = require('moment')
 const firebase = require('./firebase')
+const fs = require('fs')
 
 
 const axios = axiosBase.create({
@@ -12,6 +13,8 @@ const axios = axiosBase.create({
   responseType: 'json'
 });
 
+
+
 const data = {
   first: "Ada",
   last: "Lovelace",
@@ -20,7 +23,7 @@ const data = {
 
 axios.get()
   .then((res) => {
-    return(res.data.Rows.map(event => {
+    return (res.data.Rows.map(event => {
       event = event.split('|')
       return ({
         StartTime: event[0],
@@ -30,6 +33,25 @@ axios.get()
         ID: event[4]
       })
     }))
+  })
+  .then(res => {
+    return res.filter(event => {
+      return event.EndTime >= moment().unix()
+    })
+  })
+  .then(payload => {
+    firebase.putImgToDb(payload)
+    return payload
+  })
+  .then(payload => {
+    payload.map(event => {
+      return ({
+        StartTime: event.StartTime,
+        image: `testImages/${event.Icon}.png`,
+        endDate: event.EndTime,
+        name: event.icon
+      })
+    })
   })
   .then(payload => {
     console.log(payload.length)

@@ -1,5 +1,7 @@
 const firebase = require('firebase')
+const axios = require('axios')
 require('firebase/firestore')
+require('firebase/storage')
 
 const firebaseConfig = {
   apiKey: "AIzaSyCaBK5yrFrfEHV6SzSnLHF5gYSvv9UaZ4w",
@@ -16,6 +18,7 @@ firebase.initializeApp(firebaseConfig)
 
 const email = process.env.firebaseUserID
 const password = process.env.firebasePassword
+const BaseImageUrl = "https://sinoalice.game-db.tw/images/banner"
 
 exports.AuthDocumentWrite = data => {
   firebase
@@ -53,6 +56,52 @@ exports.AuthDocumentWrite = data => {
            })
         })
       }
+
+    })
+    .then(payload => {
+      firebase
+        .auth()
+        .signOut()
+        .then(function() {
+          console.log("firebase SignOut");
+        })
+        .catch(function(error) {
+          console.error("Signout Error: ", error);
+        });
+    })
+    .catch(function(error) {
+      console.error("firebase auth error: ", error);
+    });
+}
+
+exports.putImgToDb = (data) => {
+  firebase
+    .auth()
+    .signInWithEmailAndPassword(email, password)
+    .then(payload => {
+      console.log(payload.user.uid);
+    })
+    .then(payload => {
+      const allLength = data.length
+      return new Promise(() => {
+        data.map((event, index) => {
+          axios.get(`${BaseImageUrl}/${event.Icon}/BannerL${event.ID}.png`, { responseType: 'arraybuffer' })
+            .then(res => {
+              console.log(res.data)
+              firebase
+                .storage()
+                .ref()
+                .child(`testImages/${event.Icon}.png`)
+                .put(res.data)
+                .then(function (snapshot) {
+                  console.log(`Uploaded ${index + 1} / ${allLength}`);
+                })
+                .catch(err => {
+                  console.warn(err)
+                })
+          })
+        })
+      })
 
     })
     .then(payload => {
