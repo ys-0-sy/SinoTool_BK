@@ -34,7 +34,7 @@ axios.get()
   .then(payload => {
     console.log(payload.length)
     console.log(typeof payload)
-    firebase.AuthDocumentWrite(payload);   
+    firebase.AuthDocumentWrite(payload);
   })
   .catch((err) => {
   console.log(err)

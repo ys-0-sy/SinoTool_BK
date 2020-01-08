@@ -14,8 +14,8 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig)
 
-const email = "yuta.saito0703@gmail.com"
-const password = "111111"
+const email = process.env.firebaseUserID
+const password = process.env.firebasePassword
 
 exports.AuthDocumentWrite = data => {
   firebase
@@ -70,6 +70,3 @@ exports.AuthDocumentWrite = data => {
       console.error("firebase auth error: ", error);
     });
 }
-
-
-
