@@ -79,10 +79,10 @@ exports.putImgToDb = async (data, collection) => {
     console.log("upload finished")
     console.log("Templary file deleting... 3/5")
     const targetRemoveFiles = fs.readdirSync(targetDirectoryPath);
-    targetRemoveFiles.forEach(file => {
-      fs.unlinkSync(`${targetDirectoryPath}/${file}`);
-    })
-    fs.rmdirSync(targetDirectoryPath);
+    // targetRemoveFiles.forEach(file => {
+    //   fs.unlinkSync(`${targetDirectoryPath}/${file}`);
+    // })
+    // fs.rmdirSync(targetDirectoryPath);
     console.log("done.")
 
 

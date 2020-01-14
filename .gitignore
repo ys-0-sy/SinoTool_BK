@@ -113,3 +113,4 @@ dist
 serviceAccountKey.json
 
 .DS_Store
+tmp/
