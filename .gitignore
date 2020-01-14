@@ -110,3 +110,6 @@ dist
 .vscode-test
 
 
+serviceAccountKey.json
+
+.DS_Store

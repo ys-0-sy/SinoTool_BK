@@ -1,63 +1,52 @@
 const axiosBase = require('axios')
 const moment = require('moment')
 const firebase = require('./firebase')
-const fs = require('fs')
-
 
 const axios = axiosBase.create({
   baseURL: 'https://sinoalice.game-db.tw/package/alice_event2.js',
   headers: {
-    'Content-Type': 'application/json',
-    'X-Requested-With': 'XMLHttpRequest'
+    'Content-Type': 'application/json'
   },
   responseType: 'json'
 });
 
+const collection = 'test-event'
+const imgRoot = 'test-events-banner'
 
-
-const data = {
-  first: "Ada",
-  last: "Lovelace",
-  born: 1815
-};
-
-axios.get()
-  .then((res) => {
-    return (res.data.Rows.map(event => {
+const main = async () => {
+  try {
+    console.log("Downloading events list... 1/5")
+    let res = await axios.get()
+    console.log("done.")
+    res = await Promise.all(res.data.Rows.map(event => {
       event = event.split('|')
+      col = res.data.Cols.split('|')
       return ({
-        StartTime: event[0],
-        Icon: event[1],
-        EndTime: event[2],
-        Bundle: event[3],
-        ID: event[4]
+        [col[0]]: event[0],
+        [col[1]]: event[1],
+        [col[2]]: event[2],
+        [col[3]]: event[3],
+        [col[4]]: event[4]
       })
     }))
-  })
-  .then(res => {
-    return res.filter(event => {
+    res = await Promise.all(res.filter(event => {
       return event.EndTime >= moment().unix()
-    })
-  })
-  .then(payload => {
-    firebase.putImgToDb(payload)
-    return payload
-  })
-  .then(payload => {
-    payload.map(event => {
+    }))
+    await firebase.putImgToDb(res, imgRoot)
+    res = await Promise.all(res.map(event => {
       return ({
-        StartTime: event.StartTime,
-        image: `testImages/${event.Icon}.png`,
+        startDate: event.StartTime,
+        image: `${imgRoot}/${event.Icon}.png`,
         endDate: event.EndTime,
-        name: event.icon
+        name: event.Icon,
+        guerrilla: event.Bundle.match(`.*tobatsu`)
       })
-    })
-  })
-  .then(payload => {
-    console.log(payload.length)
-    console.log(typeof payload)
-    firebase.AuthDocumentWrite(payload);
-  })
-  .catch((err) => {
-  console.log(err)
-})
+    }))
+    await firebase.DeleteAllDocuments(collection)
+    await firebase.AuthDocumentWrite(res, collection);
+  } catch (err) {
+    console.log(err)
+  }
+}
+
+main()

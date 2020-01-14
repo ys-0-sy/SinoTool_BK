@@ -1,121 +1,92 @@
-const firebase = require('firebase')
+const admin = require('firebase-admin')
 const axios = require('axios')
-require('firebase/firestore')
-require('firebase/storage')
+const fs = require('fs')
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCaBK5yrFrfEHV6SzSnLHF5gYSvv9UaZ4w",
-  authDomain: "sinotool-3973b.firebaseapp.com",
+admin.initializeApp({
+  credential: admin.credential.applicationDefault(),
   databaseURL: "https://sinotool-3973b.firebaseio.com",
-  projectId: "sinotool-3973b",
-  storageBucket: "sinotool-3973b.appspot.com",
-  messagingSenderId: "520865910956",
-  appId: "1:520865910956:web:004ed1a141a3b273124f09",
-  measurementId: "G-XNNMMNP599"
-};
+  storageBucket: "gs://sinotool-3973b.appspot.com"
+});
 
-firebase.initializeApp(firebaseConfig)
-
-const email = process.env.firebaseUserID
-const password = process.env.firebasePassword
 const BaseImageUrl = "https://sinoalice.game-db.tw/images/banner"
 
-exports.AuthDocumentWrite = data => {
-  firebase
-    .auth()
-    .signInWithEmailAndPassword(email, password)
-    .then(payload => {
-      console.log(payload.user.uid);
-    })
-    .then(payload => {
-      if (data.length === 1) {
-        return firebase
-          .firestore()
-          .collection("users")
-          .add(data)
-          .then(docRef => {
-            console.log("Object")
-            console.log("Document written with ID: ", docRef.id);
-          })
-          .catch(err => {
-            console.error("Error adding document: ", err);
-          });
-      } else {
-         new Promise(() => {
-           data.map(singleData => {
-            firebase
-              .firestore()
-              .collection("testEvent")
-              .add(singleData)
-              .then(docRef => {
-                console.log("Document written with ID: ", docRef.id);
-              })
-              .catch(err => {
-                console.error("Error adding document: ", err);
-              })
-           })
-        })
-      }
-
-    })
-    .then(payload => {
-      firebase
-        .auth()
-        .signOut()
-        .then(function() {
-          console.log("firebase SignOut");
-        })
-        .catch(function(error) {
-          console.error("Signout Error: ", error);
-        });
-    })
-    .catch(function(error) {
-      console.error("firebase auth error: ", error);
-    });
+exports.AuthDocumentWrite = (data, collection) => {
+  console.log("Writing Database... 5/5")
+  let db = admin.firestore();
+  data.map(singleData => {
+    try {
+      db.collection(collection).add(singleData)
+    } catch (err) {
+      console.warn(err)
+    }
+  })
+  console.log("done.")
 }
 
-exports.putImgToDb = (data) => {
-  firebase
-    .auth()
-    .signInWithEmailAndPassword(email, password)
-    .then(payload => {
-      console.log(payload.user.uid);
-    })
-    .then(payload => {
-      const allLength = data.length
-      return new Promise(() => {
-        data.map((event, index) => {
-          axios.get(`${BaseImageUrl}/${event.Icon}/BannerL${event.ID}.png`, { responseType: 'arraybuffer' })
-            .then(res => {
-              console.log(res.data)
-              firebase
-                .storage()
-                .ref()
-                .child(`testImages/${event.Icon}.png`)
-                .put(res.data)
-                .then(function (snapshot) {
-                  console.log(`Uploaded ${index + 1} / ${allLength}`);
-                })
-                .catch(err => {
-                  console.warn(err)
-                })
-          })
+exports.DeleteAllDocuments = async collection => {
+  const firestore = admin.firestore()
+  let collectionRef = firestore.collection(collection);
+
+  try {
+    console.log(`firestore Documents Deleting... 4/5 Collection: ${collection}`)
+    documentRefs = await collectionRef.listDocuments()
+    await Promise.all(documentRefs.map(documentRef => {
+        admin.firestore().runTransaction(transaction => {
+          transaction.delete(documentRef);
+          return Promise.resolve()
         })
       })
+    )
+    console.log(`Delete All Done.`)
+  } catch (err) {
+    console.warn(err)
+  }
+}
 
-    })
-    .then(payload => {
-      firebase
-        .auth()
-        .signOut()
-        .then(function() {
-          console.log("firebase SignOut");
+exports.putImgToDb = async (data, collection) => {
+  const bucket = admin.storage().bucket()
+  const targetDirectoryPath = './tmp'
+  try {
+    console.log("Uploading Image to firebase storage... 2/5")
+    if (!fs.existsSync(targetDirectoryPath)) {
+      fs.mkdirSync(targetDirectoryPath);
+    }
+    await Promise.all(data.map(async (event, index) => {
+      const res = await axios.get(
+        `${BaseImageUrl}/${event.Bundle}/BannerL${event.Icon}.png`,
+        {
+          responseType: 'arraybuffer',
+          headers: { contentType: "image/png" }
         })
-        .catch(function(error) {
-          console.error("Signout Error: ", error);
-        });
+      fs.writeFileSync(`./${targetDirectoryPath}/${event.Icon}.png`, new Buffer.from(res.data), 'binary');
+
+      const options = {
+        destination: `${collection}/${event.Icon}.png`,
+        resumable: false,
+        validation: 'crc32c',
+        metadata: {
+          metadata: {
+            background: `${event.Bundle}`
+          }
+        }
+      };
+      await bucket.upload(`./${targetDirectoryPath}/${event.Icon}.png`, options, (err, file) => {
+        if (err) {
+          throw (err)
+        }
+      })
+    }))
+    console.log("upload finished")
+    console.log("Templary file deleting... 3/5")
+    const targetRemoveFiles = fs.readdirSync(targetDirectoryPath);
+    targetRemoveFiles.forEach(file => {
+      fs.unlinkSync(`${targetDirectoryPath}/${file}`);
     })
-    .catch(function(error) {
-      console.error("firebase auth error: ", error);
-    });
+    fs.rmdirSync(targetDirectoryPath);
+    console.log("done.")
+
+
+  } catch (err) {
+    console.warn(err)
+  }
 }
