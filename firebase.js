@@ -3,7 +3,7 @@ const axios = require('axios')
 const fs = require('fs')
 
 admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
+  credential: admin.credential.cert(JSON.parse(process.env.GOOGLE_API_KEY)),
   databaseURL: "https://sinotool-3973b.firebaseio.com",
   storageBucket: "gs://sinotool-3973b.appspot.com"
 });
