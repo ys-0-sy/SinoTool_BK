@@ -3,8 +3,8 @@ const moment = require('moment')
 const firebase = require('./firebase')
 const admin = require('firebase-admin')
 
-const collection = 'test-event'
-const imgRoot = 'test-events-banner'
+const collection = 'events'
+const imgRoot = 'events-banner'
 
 const main = async () => {
   try {
