@@ -8,8 +8,6 @@ admin.initializeApp({
   storageBucket: "gs://sinotool-3973b.appspot.com"
 });
 
-const BaseImageUrl = "https://sinoalice.game-db.tw/images/banner"
-
 exports.AuthDocumentWrite = (data, collection) => {
   console.log("Writing Database... 5/5")
   let db = admin.firestore();
@@ -53,7 +51,7 @@ exports.putImgToDb = async (data, collection) => {
     }
     await Promise.all(data.map(async (event, index) => {
       const res = await axios.get(
-        `${BaseImageUrl}/${event.Bundle}/BannerL${event.Icon}.png`,
+        event.url,
         {
           responseType: 'arraybuffer',
           headers: { contentType: "image/png" }
@@ -70,6 +68,7 @@ exports.putImgToDb = async (data, collection) => {
           }
         }
       };
+      
       await bucket.upload(`./${targetDirectoryPath}/${event.Icon}.png`, options, (err, file) => {
         if (err) {
           throw (err)
@@ -79,10 +78,10 @@ exports.putImgToDb = async (data, collection) => {
     console.log("upload finished")
     console.log("Templary file deleting... 3/5")
     const targetRemoveFiles = fs.readdirSync(targetDirectoryPath);
-    // targetRemoveFiles.forEach(file => {
-    //   fs.unlinkSync(`${targetDirectoryPath}/${file}`);
-    // })
-    // fs.rmdirSync(targetDirectoryPath);
+    targetRemoveFiles.forEach(file => {
+      fs.unlinkSync(`${targetDirectoryPath}/${file}`);
+    })
+    fs.rmdirSync(targetDirectoryPath);
     console.log("done.")
 
 

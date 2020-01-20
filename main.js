@@ -3,7 +3,7 @@ const moment = require('moment')
 const firebase = require('./firebase')
 const admin = require('firebase-admin')
 
-const collection = 'events'
+const collection = 'eventsList'
 const imgRoot = 'events-banner'
 
 const main = async () => {
@@ -33,7 +33,12 @@ const main = async () => {
     res = await Promise.all(res.filter(event => {
       return event.EndTime >= moment().unix()
     }))
-    await firebase.putImgToDb(res, imgRoot)
+    await firebase.putImgToDb(res.map(event => {
+      return {
+        ...event, 
+        url: `https://sinoalice.game-db.tw/images/banner/${event.Bundle}/BannerL${event.Icon}.png`
+      };
+    }), imgRoot)
 
     let tobatsu = await axios.create({
         baseURL: 'https://sinoalice.game-db.tw/package/alice_raid2.js',
@@ -57,8 +62,25 @@ const main = async () => {
       })
     }))
     tobatsu = await Promise.all(tobatsu.map(event => {
-      return ({ ...event, BannerResource: event.BannerResource.split(',') })
+      return {
+        ...event,
+        AreaID: event.AreaID.split(",").map(count =>
+          ("00" + count).slice(-2)
+        ),
+        BannerResource: event.BannerResource.split(",")
+      };
     }))
+    await firebase.putImgToDb(
+      tobatsu.map(event => {
+        return {
+          ...event,
+          Icon: `char${event.AreaID[0]}`,
+          url: `https://sinoalice.game-db.tw/images/char${event.AreaID[0]}.png`,
+          Bundle: "characterIcon"
+        };
+      }),
+      'characterIcon'
+    );
 
     res = await Promise.all(res.map(event => {
       const guerrilla = tobatsu.filter((item) => {
@@ -72,8 +94,22 @@ const main = async () => {
         guerrilla: guerrilla
       })
     }))
+
+    tobatsu = await Promise.all(
+      tobatsu.map(event => {
+        return {
+          ...event,
+          image: event.AreaID.map(id => (`characterIcon/char${id}.png`))
+        };
+      })
+    );
+
+    console.log(tobatsu)
     await firebase.DeleteAllDocuments(collection)
-    await firebase.AuthDocumentWrite(res, collection);
+    await firebase.AuthDocumentWrite(res, collection)
+    await firebase.DeleteAllDocuments('guerrillaList');
+    await firebase.AuthDocumentWrite(tobatsu, 'guerrillaList');
+
   } catch (err) {
     console.log(err)
   }
