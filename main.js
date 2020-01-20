@@ -81,30 +81,38 @@ const main = async () => {
       }),
       'characterIcon'
     );
-
-    res = await Promise.all(res.map(event => {
-      const guerrilla = tobatsu.filter((item) => {
-        return item.BannerResource.indexOf(`${event.Bundle}/${event.Icon}`) >= 0
-      }).length > 0 ? true : false
-      return ({
-        startDate: new admin.firestore.Timestamp(Number(event.StartTime), 0),
-        image: `${imgRoot}/${event.Icon}.png`,
-        endDate: new admin.firestore.Timestamp(Number(event.EndTime), 0),
-        name: event.Icon,
-        guerrilla: guerrilla
-      })
-    }))
-
     tobatsu = await Promise.all(
       tobatsu.map(event => {
         return {
           ...event,
-          image: event.AreaID.map(id => (`characterIcon/char${id}.png`))
+          image: event.AreaID.map(id => `characterIcon/char${id}.png`)
         };
       })
     );
 
-    console.log(tobatsu)
+    res = await Promise.all(res.map(event => {
+      const isGuerrilla = tobatsu.filter((item) => {
+        return item.BannerResource.indexOf(`${event.Bundle}/${event.Icon}`) >= 0
+      }).length > 0 ? true : false
+      res = {
+        startDate: new admin.firestore.Timestamp(Number(event.StartTime), 0),
+        image: `${imgRoot}/${event.Icon}.png`,
+        endDate: new admin.firestore.Timestamp(Number(event.EndTime), 0),
+        name: event.Icon,
+        isGuerrilla: isGuerrilla
+      }
+      if (isGuerrilla) {
+        const guerrilla = tobatsu.filter(item => {
+          return (
+            item.BannerResource.indexOf(`${event.Bundle}/${event.Icon}`) >= 0
+          );
+        });
+        res.guerrilla = guerrilla[0]
+      }
+      return res
+    }))
+    console.log(res)
+
     await firebase.DeleteAllDocuments(collection)
     await firebase.AuthDocumentWrite(res, collection)
     await firebase.DeleteAllDocuments('guerrillaList');

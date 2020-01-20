@@ -49,7 +49,7 @@ exports.putImgToDb = async (data, collection) => {
     if (!fs.existsSync(targetDirectoryPath)) {
       fs.mkdirSync(targetDirectoryPath);
     }
-    await Promise.all(data.map(async (event, index) => {
+    await Promise.all(data.map(async (event) => {
       const res = await axios.get(
         event.url,
         {
