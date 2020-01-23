@@ -41,7 +41,7 @@ const main = async () => {
     }), imgRoot)
 
     let tobatsu = await axios.create({
-        baseURL: 'https://sinoalice.game-db.tw/package/alice_raid2.js',
+        baseURL: 'https://sinoalice.game-db.tw/package/alice_raid3.js',
         headers: {
             'Content-Type': 'application/json'
           },
@@ -111,7 +111,6 @@ const main = async () => {
       }
       return res
     }))
-    console.log(res)
 
     await firebase.DeleteAllDocuments(collection)
     await firebase.AuthDocumentWrite(res, collection)
